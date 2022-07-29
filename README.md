@@ -88,7 +88,7 @@ curl -H "Content-Type: application/json" -X POST -d '{"eventmeta": {"kind": "pod
 
 ## 修改markdown内容
 
-参考[企业微信机器人配置说明](https://work.weixin.qq.com/api/doc/90000/90136/91770)
+参考[企业微信机器人配置说明](https://developer.work.weixin.qq.com/document/path/91770)
 
 ## 调整kube-watch内容
 
