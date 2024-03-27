@@ -8,28 +8,30 @@ import time
 
 app = Flask(__name__)
 
-# 格言API的Key，接口文档地址：https://www.tianapi.com/apiview/26
+#------------Config part-----------------
+
+# 格言API的Key，可以为空，接口文档地址：https://www.tianapi.com/apiview/26
 tianApiKey= ''
 
-#------------Config part-----------------
 projects = {
-    # struct is regular(string) => dict
-    'projectA-exmaple-com':{
-        # 企业微信群聊机器人token
+    """
+    在这里配置kubernetes中的namespace前缀、微信群机器人token、环境地址
+    比如命名空间是blog-crazyphper-com-staging和blog-crazyphper-com-production，那么就：
+    'blog-crazyphper-com':{
         'token':'AAAAAA-1234-7890-000-123456789000',
-        # 各个环境演示项目的地址：对应命名空间后缀，比如“api-baidu-com-staging”，如果你还有更多环境，可以继续追加
-        'staging_url':'https://staging.example.com',
-        'production_url':'https://www.example.com'
-    },
-    'projectB-example-com':{
+        'staging_url':'https://blog.staging.crazyphper.com',
+        'production_url':'https://blog.crazyphper.com'
+    }
+    """
+    'your-namespace-prefix':{
         'token':'',
         'testing_url':''
     }
 }
-api = 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key='
 
 #------------Config part end-----------------
 
+API = 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key='
 class WebhookMessage:
     def __init__(self):
         self.EventMeta = {}
@@ -41,6 +43,7 @@ class WebhookMessage:
         return self.toString()
 
     def toString(self):
+        "返回需要发送的文本"
         #根据namespace后缀判断环境
         env = self.EventMeta['namespace'].split('-')[-1]
         motto = getMotto()
@@ -56,16 +59,19 @@ class WebhookMessage:
 
 
 def getMotto():
-    apiUrl = 'http://api.tianapi.com/txapi/dictum/index?key='+tianApiKey+'&num=1'
-    result = requests.get(apiUrl)
-    try:
-        content = json.loads(result.text)['newslist'][0]
-        return content['content'] + ' --- ' + content['mrname']
-    except Exception as e:
-        pass
+    "返回格言"
+    if tianApiKey != "" :
+        apiUrl = 'http://api.tianapi.com/txapi/dictum/index?key='+tianApiKey+'&num=1'
+        result = requests.get(apiUrl)
+        try:
+            content = json.loads(result.text)['newslist'][0]
+            return content['content'] + ' --- ' + content['mrname']
+        except Exception as e:
+            pass
     return 'have fun'
 
 def sendMessage(message):
+    "推送webhook消息"
     if message['eventmeta']['kind'] == 'pod' and message['eventmeta']['reason'] != 'deleted':
         for namespace in projects:
             if re.match(namespace,message['eventmeta']['namespace']):
@@ -81,7 +87,7 @@ def sendMessage(message):
                         "content": playground.toString()
                     }
                 }
-                webhook = api+projects[namespace]['token']
+                webhook = API+projects[namespace]['token']
                 # 睡它个半分钟再发送
                 logging.warning("=========开始沉睡==========")
                 time.sleep(30)
